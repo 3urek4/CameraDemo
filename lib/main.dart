@@ -3,8 +3,30 @@ import 'screens/camera_screen.dart'; // 导入相机界面
 import 'screens/gallery_screen.dart'; // 导入相册界面
 import 'screens/settings_screen.dart'; // 导入设置界面
 import 'package:camera/camera.dart'; // 导入camera包
+import 'dart:io'; // 导入File类使用
+import 'screens/globals.dart' as globals; // 导入全局变量
+import 'package:path_provider/path_provider.dart'; // 提供一种平台无关的方式以一致的方式访问设备的文件位置系统
 
 List<CameraDescription> cameras = []; // 用于存储相机设备的列表
+
+Future<void> loadUsrPwd() async{
+  try{
+    final directory = await getApplicationDocumentsDirectory();
+    File file = File('${directory.path}/usr_pwd.txt');
+    if(await file.exists()){
+      print('File exists');
+    }
+    else{
+      print('File does not exist. Creating file...');
+      await file.create();
+      print('File created');
+    }
+    globals.password = await file.readAsString();
+    print(globals.password);
+  }catch(e){
+    print('读取文件时出现错误：$e');
+  }
+}
 
 Future<void> main() async {
   try {
@@ -13,6 +35,7 @@ Future<void> main() async {
   } on CameraException catch (e) {
     print('获取相机设备时出错：$e');
   }
+  await loadUsrPwd();
   runApp(MyApp()); // 启动应用程序
 }
 
@@ -59,7 +82,7 @@ class _MyCameraAppState extends State<MyCameraApp> {
   final List<Widget> _pages = [
     CameraScreen(), // 相机界面部分
     GalleryScreen(), // 相册界面部分
-    //SettingsScreen(), // 设置界面部分
+    SettingsScreen(), // 设置界面部分
   ];
 
   @override
