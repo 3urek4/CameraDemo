@@ -1,10 +1,10 @@
-import 'package:camera/camera.dart'; // 导入camera包
-import 'package:flutter/material.dart'; // 导入Flutter核心包
-import '../main.dart'; // 导入主应用程序入口
-import 'dart:io'; // 导入File类使用
-import 'package:path_provider/path_provider.dart'; // 导入获取应用程序文档目录方法的包
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import '../main.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'edit_screen.dart';
 
-// 相机界面部分，StatefulWidget
 class CameraScreen extends StatefulWidget {
   @override
   _CameraScreenState createState() => _CameraScreenState();
@@ -32,55 +32,46 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   File? _imageFile; // 图像文件，初始化为null
   List<File> allFileList = []; // 用于存储已捕获的所有文件列表
 
-  // 刷新已捕获的图像列表
-  refreshAlreadyCapturedImages() async {
-    final directory = await getApplicationDocumentsDirectory(); // 获取应用程序文档目录
-    List<FileSystemEntity> fileList = await directory.list().toList();
-    allFileList.clear();
-    List<Map<int, dynamic>> fileNames = [];
+  Future<String> navigateToEditScreen(File imageFile) async {
+    final editedImagePath = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditScreen(imageFile: imageFile, refreshGallery: refreshAlreadyCapturedImages),
+      ),
+    );
+    return editedImagePath ?? '';
+  }
 
-    // 寻找所有图像文件，并存储它们
-    fileList.forEach((file) {
-      if (file.path.contains('.jpg')) {
-        allFileList.add(File(file.path));
-        String name = file.path.split('/').last.split('.').first;
-        fileNames.add({0: int.parse(name), 1: file.path.split('/').last});
-      }
-    });
 
-    // 获取最近的文件
-    if (fileNames.isNotEmpty) {
-      final recentFile =
-      fileNames.reduce((curr, next) => curr[0] > next[0] ? curr : next);
-      String recentFileName = recentFile[1];
-
-      _imageFile = File('${directory.path}/$recentFileName');
-      setState(() {});
+  Future<void> takeAndNavigateToEditScreen() async {
+    XFile? rawImage = await takePicture();
+    if (rawImage != null) {
+      File capturedImage = File(rawImage.path);
+      navigateToEditScreen(capturedImage);
     }
   }
 
   // 选择新的相机设备
   void onNewCameraSelected(CameraDescription cameraDescription) async {
     final previousCameraController = controller;
-    // Instantiating the camera controller
     final CameraController cameraController = CameraController(
       cameraDescription,
       currentResolutionPreset,
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
-    // Dispose the previous controller
+
     await previousCameraController?.dispose();
-    // Replace with the new controller
+
     if (mounted) {
       setState(() {
         controller = cameraController;
       });
     }
-    // Update UI if controller updated
+
     cameraController.addListener(() {
       if (mounted) setState(() {});
     });
-    // Initialize controller
+
     try {
       await cameraController.initialize();
 
@@ -103,7 +94,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     } on CameraException catch (e) {
       print('Error initializing camera: $e');
     }
-    // Update the boolean
+
     if (mounted) {
       setState(() {
         _isCameraInitialized = controller!.value.isInitialized;
@@ -145,14 +136,57 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
   }
 
+  // 刷新已捕获的图像列表
+  void refreshAlreadyCapturedImages() async {
+    final directory = await getApplicationDocumentsDirectory();
+    List<FileSystemEntity> fileList = await directory.list().toList();
+    allFileList.clear();
+    List<String> fileNames = [];
+
+    // 寻找所有图像文件，并存储它们
+    fileList.forEach((file) {
+      if (file.path.contains('.jpg')) {
+        allFileList.add(File(file.path));
+        String name = file.path.split('/').last;
+        if (!name.contains('_edited_')) {
+          fileNames.add(name);
+        }
+      }
+    });
+
+    // 获取最近的文件
+    if (fileNames.isNotEmpty) {
+      fileNames.sort();
+      String recentFileName = fileNames.last;
+
+      _imageFile = File('${directory.path}/$recentFileName');
+      //print("空空空空空空");
+    }
+
+    // 检查是否有编辑后的图片
+    String editedImageSuffix = '_edited_';
+    List<FileSystemEntity> editedFiles = await directory
+        .list()
+        .where((file) => file.path.contains(editedImageSuffix))
+        .toList();
+
+    if (editedFiles.isNotEmpty) {
+      allFileList.addAll(editedFiles.cast<File>());
+      _imageFile = editedFiles.last as File;
+      //print("编辑过编辑过");
+    }
+
+    setState(() {});
+  }
+
   @override
   void initState() {
-    // 初始化相机界面
     // 仅在 _imageFile 为空时初始化相机界面
     onNewCameraSelected(cameras[0]);
     if (_imageFile == null) {
       // 如果 _imageFile 为空，则设置为最近的图像文件
       refreshAlreadyCapturedImages();
+      //print("niuniuniuniu666666666");
     }
     super.initState();
   }
@@ -193,8 +227,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 展示分辨率选项
           Positioned(
-            top: 20, // Adjust the value to position the DropdownButton
-            right: 20, // Adjust the value to position the DropdownButton
+            top: 20,
+            right: 20,
             child: DropdownButton<ResolutionPreset>(
               dropdownColor: Colors.black87,
               underline: Container(),
@@ -222,9 +256,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 显示缩放条
           Positioned(
-            bottom: 100, // Adjust the value to position the Slider
-            left: 20, // Adjust the value to position the Slider
-            right: 20, // Adjust the value to position the Slider
+            bottom: 100,
+            left: 20,
+            right: 20,
             child: Row(
               children: [
                 Expanded(
@@ -261,8 +295,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 显示曝光偏移量
           Positioned(
-            bottom: 250, // Adjust the value to position the ExposureOffset Slider
-            left: 20, // Adjust the value to position the ExposureOffset Slider
+            bottom: 250,
+            left: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -305,9 +339,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 显示闪光灯模式
           Positioned(
-            top: 80, // Adjust the value to position the Flash Mode icons
-            left: 20, // Adjust the value to position the Flash Mode icons
-            right: 20, // Adjust the value to position the Flash Mode icons
+            top: 80,
+            left: 20,
+            right: 20,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -377,8 +411,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 切换摄像头按钮
           Positioned(
-            top: 20, // Adjust the value to position the Camera Switch button
-            left: 20, // Adjust the value to position the Camera Switch button
+            top: 20,
+            left: 20,
             child: InkWell(
               onTap: () {
                 setState(() {
@@ -409,8 +443,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             ),
           ),
 
+          // 拍照按钮
           Positioned(
-            bottom: 20, // Adjust the value to position the Capture button
+            bottom: 20,
             left: 0,
             right: 0,
             child: Center(
@@ -438,23 +473,35 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
           // 显示已捕获的图像
           Positioned(
-            bottom: 30, // 调整值以定位 Capture 按钮
-            right: 20, // 调整值以定位 Capture 按钮
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(10.0),
-                border: Border.all(color: Colors.white, width: 2),
-                image: _imageFile != null
-                    ? DecorationImage(
-                  image: FileImage(_imageFile!),
-                  fit: BoxFit.cover,
-                )
-                    : null,
+            bottom: 30,
+            right: 20,
+            child: GestureDetector(
+              onTap: () async {
+                if (_imageFile != null) {
+                  String editedImagePath = await navigateToEditScreen(_imageFile!);
+                  if (editedImagePath.isNotEmpty) {
+                    setState(() {
+                      _imageFile = File(editedImagePath);
+                    });
+                  }
+                }
+              },
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(10.0),
+                  border: Border.all(color: Colors.white, width: 2),
+                  image: _imageFile != null
+                      ? DecorationImage(
+                    image: FileImage(_imageFile!),
+                    fit: BoxFit.cover,
+                  )
+                      : null,
+                ),
+                child: Container(),
               ),
-              child: Container(), // 已移除视频处理相关部分
             ),
           ),
         ],
