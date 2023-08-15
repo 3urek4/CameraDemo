@@ -1,18 +1,30 @@
-import 'package:flutter/material.dart';
-import 'screens/camera_screen.dart'; // 导入相机界面
-import 'screens/gallery_screen.dart'; // 导入相册界面
-import 'screens/settings_screen.dart'; // 导入设置界面
-import 'package:camera/camera.dart'; // 导入camera包
-import 'dart:io'; // 导入File类使用
-import 'screens/globals.dart' as globals; // 导入全局变量
-import 'package:path_provider/path_provider.dart'; // 提供一种平台无关的方式以一致的方式访问设备的文件位置系统
+import 'package:flutter/material.dart'; // Flutter的UI库
+import 'package:path_provider/path_provider.dart'; // 文件路径提供库
+import 'screens/camera_screen.dart'; // 相机界面
+import 'screens/gallery_screen.dart'; // 相册界面
+import 'screens/settings_screen.dart'; // 设置界面
+import 'package:camera/camera.dart'; // 相机库
+import 'dart:io'; // 输入输出库
+import 'globals.dart' as globals; // 全局变量库
 
-List<CameraDescription> cameras = []; // 用于存储相机设备的列表
+List<CameraDescription> cameras = []; // 存储相机设备的列表
 
+Future<void> main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized(); // 初始化Flutter绑定
+    cameras = await availableCameras(); // 获取可用相机设备
+  } on CameraException catch (e) {
+    print('获取相机设备时出错：$e');
+  }
+  await loadUsrPwd(); // 加载用户密码
+  runApp(MyApp()); // 运行Flutter应用
+}
+
+// 异步函数，用于加载用户密码
 Future<void> loadUsrPwd() async{
   try{
-    final directory = await getApplicationDocumentsDirectory();
-    File file = File('${directory.path}/usr_pwd.txt');
+    final directory = await getApplicationDocumentsDirectory(); // 获取应用文档目录
+    File file = File('${directory.path}/usr_pwd.txt'); // 创建文件对象
     if(await file.exists()){
       print('File exists');
     }
@@ -21,63 +33,34 @@ Future<void> loadUsrPwd() async{
       await file.create();
       print('File created');
     }
-    globals.password = await file.readAsString();
+    globals.password = await file.readAsString(); // 读取文件中的密码并存储到全局变量中
     print(globals.password);
   }catch(e){
     print('读取文件时出现错误：$e');
   }
 }
 
-Future<void> main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    cameras = await availableCameras(); // 获取可用的相机设备列表
-  } on CameraException catch (e) {
-    print('获取相机设备时出错：$e');
-  }
-  await loadUsrPwd();
-  runApp(MyApp()); // 启动应用程序
-}
-
-// 自定义的应用程序类
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     // 构建应用程序界面
-//     return MaterialApp(
-//       title: 'Camera Demo',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue, // 设置主题颜色为蓝色
-//       ),
-//       debugShowCheckedModeBanner: false, // 隐藏调试模式横幅
-//       home: CameraScreen(), // 设置应用程序的初始页面为相机屏幕
-//     );
-//   }
-// }
-
-// 自定义的应用程序类
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Camera Demo', // 应用程序标题
+      title: 'Camera Demo', // 应用标题
       theme: ThemeData(
-        primarySwatch: Colors.blue, // 设置主题颜色为蓝色
+        primarySwatch: Colors.blue, // 主题颜色
       ),
-      debugShowCheckedModeBanner: false, // 隐藏调试模式横幅
-      home: MyCameraApp(), // 设置应用程序的初始页面为自定义相机应用类
+      debugShowCheckedModeBanner: false, // 不显示调试模式横幅
+      home: MyCameraApp(), // 应用的主界面
     );
   }
 }
 
-// 自定义相机应用类
 class MyCameraApp extends StatefulWidget {
   @override
   _MyCameraAppState createState() => _MyCameraAppState();
 }
 
 class _MyCameraAppState extends State<MyCameraApp> {
-  int _currentIndex = 0; // 当前选中的页面索引
+  int _currentIndex = 0; // 当前显示页面的索引
 
   final List<Widget> _pages = [
     CameraScreen(), // 相机界面部分
@@ -88,12 +71,12 @@ class _MyCameraAppState extends State<MyCameraApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex], // 根据索引显示对应页面的内容
+      body: _pages[_currentIndex], // 根据索引显示对应的页面
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex, // 当前选中的底部导航栏项的索引
         onTap: (index) {
           setState(() {
-            _currentIndex = index; // 切换选中的页面
+            _currentIndex = index; // 更新索引，切换页面
           });
         },
         items: [
