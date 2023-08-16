@@ -35,6 +35,7 @@ git clone https://github.com/3urek4/CameraDemo.git
 或者直接下载ZIP文件解压打开。
 
 如何运行已下载的项目可以参考：[连接设备运行Flutter应用](https://book.flutterchina.club/chapter1/install_flutter.html#_1-3-3-%E8%BF%9E%E6%8E%A5%E8%AE%BE%E5%A4%87%E8%BF%90%E8%A1%8Cflutter%E5%BA%94%E7%94%A8)
+（记得先点进`pubspec.yaml`文件点击上方`Pub get`指令获取依赖）
 
 # 项目预览
 
