@@ -95,6 +95,7 @@ git clone https://github.com/3urek4/CameraDemo.git
   * [ ] UI优化（选）
   * [ ] 保存/同步图像到相册（选）
   * [ ] 从相册导入图像（选）
+  * [ ] to be continued~
 
 P.S. 如果不考虑联网上云的话，其实感觉settings中的其他功能可有可无，这个可以后面再和老师沟通。在现在的基础上把算法接入之后，其实就是一个基本符合设想的完整项目了。
 
