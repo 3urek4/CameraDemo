@@ -40,11 +40,11 @@ git clone https://github.com/3urek4/CameraDemo.git
 
 ## 主页面
 
-<img src="images/image-20230816110222-v7p9li4.png" width="200px"> <img src="images/image-20230816110249-mexb4dq.png" width="200px"> <img src="images/image-20230816110150-am6wjxf.png" width="200px">
+<img src="images/image-20230816110222-v7p9li4.png" width="250px"> <img src="images/image-20230816110249-mexb4dq.png" width="250px"> <img src="images/image-20230816110150-am6wjxf.png" width="250px">
 
 ## 次级页面
 
-<img src="images/image-20230816110323-tzx33aw.png" width="200px"> <img src="images/image-20230816110355-4tluawd.png" width="200px"> <img src="images/image-20230816110550-b9uwj3x.png" width="200px">​
+<img src="images/image-20230816110323-tzx33aw.png" width="250px"> <img src="images/image-20230816110355-4tluawd.png" width="250px"> <img src="images/image-20230816110550-b9uwj3x.png" width="250px">​
 
 # 关键目录结构
 
