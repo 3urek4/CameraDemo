@@ -1,3 +1,8 @@
+<h1 align="center">CameraDemo :camera:</h1>
+<p align="center">
+SRP项目代码长眠于此~
+</p>
+
 - [技术栈选择](#技术栈选择)
 - [环境依赖](#环境依赖)
 - [部署步骤](#部署步骤)
@@ -35,22 +40,25 @@ git clone https://github.com/3urek4/CameraDemo.git
 
 ## 主页面
 
-​​![image](assets/image-20230816110222-v7p9li4.png)​​​![image](assets/image-20230816110249-mexb4dq.png)​​​​![image](assets/image-20230816110150-am6wjxf.png)
+<img src="images/image-20230816110222-v7p9li4.png" width="300px"> <img src="images/image-20230816110249-mexb4dq.png" width="300px"> <img src="images/image-20230816110150-am6wjxf.png" width="300px">
 
 ## 次级页面
 
-![image](assets/image-20230816110323-tzx33aw.png)​![image](assets/image-20230816110355-4tluawd.png)​![image](assets/image-20230816110550-b9uwj3x.png)​
+<img src="images/image-20230816110323-tzx33aw.png" width="300px"> <img src="images/image-20230816110355-4tluawd.png" width="300px"> <img src="images/image-20230816110550-b9uwj3x.png" width="300px">​
 
 # 关键目录结构
 
-​​├─lib  
-│  │  globals.dart  // 存储全局变量  
-│  │  main.dart  // 主程序  
-│  │<br />​│  └─screens  
-│          camera_screen.dart  // 相机界面  
-│          edit_screen.dart  // 图片编辑界面  
-│          gallery_screen.dart  // 相册界面  
-│          settings_screen.dart  // 设置界面​
+```shell
+├─lib
+│  │  globals.dart  // 存储全局变量
+│  │  main.dart  // 主程序
+│  │  
+│  └─screens
+│     camera_screen.dart  // 相机界面
+│     edit_screen.dart  // 图片编辑界面
+│     gallery_screen.dart  // 相册界面
+│     settings_screen.dart  // 设置界面
+```
 
 # To-do List
 
