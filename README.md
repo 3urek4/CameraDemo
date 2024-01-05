@@ -52,6 +52,7 @@ git clone https://github.com/3urek4/CameraDemo.git
 ```shell
 ├─lib
 │  │  globals.dart  // 存储全局变量
+│  │  native.dart  // 
 │  │  main.dart  // 主程序
 │  │  
 │  └─screens
@@ -60,6 +61,118 @@ git clone https://github.com/3urek4/CameraDemo.git
 │     gallery_screen.dart  // 相册界面
 │     settings_screen.dart  // 设置界面
 ```
+
+# 加解密算法实现
+
+## 使用的算法是什么
+
+使用的算法来源于何军辉老师在《IEEE Transactions on Multimedia》上的一篇论文：[JPEG Image Encryption With Improved Format Compatibility and File Size Preservation](https://ieeexplore.ieee.org/abstract/document/8319513) 。
+
+可以从论文的摘要大致了解这个算法：
+
+>在数字图像加密的领域中，相较于光栅图像，压缩图像受到的关注较少。许多现有的JPEG图像加密方案要么与JPEG标准兼容性不佳，要么会导致加密后的JPEG图像文件大小显著增加。为了解决这些问题，论文提出了一种新的加密方法。
+>
+>这种方法的主要步骤为：
+>
+>1. 对JPEG图像中的直流系数（DC系数）编码进行分组和置换。这些编码是对量化直流系数差异进行编码的，将具有相同符号的连续DC编码分为一组，并在每组内部进行置换。
+>2. 对于每个DC编码的组，根据组的大小（随迭代次数增加）和是否在解码过程中发生量化直流系数溢出，可能会交换组的左半部分和右半部分。
+>3. 所有交流系数（AC系数）根据它们的零游程长度被分类为63个类别，然后在每个类别内分别对AC编码进行混乱。
+>4. 所有最小编码单元（MCUs）除直流系数外，作为一个整体被随机打乱。
+>
+>此外，为了提高安全性，论文中提出使用与图像内容相关的加密密钥。实验结果表明，加密后的JPEG图像文件大小与原始图像文件大小几乎相同，只有由于字节对齐导致的轻微变化。此外，从加密的JPEG图像解码出的量化直流系数不会超出有效范围。
+>
+>与其他相关方法相比，提出的方法改善了格式兼容性，并且由于所有加密操作直接在JPEG位流上执行，无需重新进行熵编码。提出的方法对暴力攻击、差分密码分析、已知明文攻击和轮廓攻击证明是安全的。该方法还可以应用于彩色JPEG图像。
+
+为了理解加密算法的具体实现原理，可能要学习关于JPEG编码（把正常图片压缩为jpg格式图片）的一些基本知识，包括：
+
+- 原始的图片（bmp）图片是怎么组成的
+- JPEG编码中的最小编码单元（MCU）是什么
+- JPEG编码的四个阶段是什么
+  - RGB颜色空间 -> YCbCr颜色空间
+  - 离散余弦变换（DCT）
+  - 量化
+  - 哈夫曼编码
+
+推荐视频：[Youtube视频链接](https://www.youtube.com/watch?v=CPT4FSkFUgs)
+
+## 算法如何应用在项目中
+
+何老师提供了一个C++项目，实现论文中的算法并展示了算法的执行效果。
+
+而在flutter中，有“FFI（Foreign Function Interface）”功能，它能够允许Flutter代码调用C语言API。具体来说，它可以允许flutter绑定C语言编写的动态链接库（在Linux/Android上是.so文件，在Windows上是.dll文件，在MacOS上是.dylib文件），并使用其中定义的函数。
+
+虽然flutter要求的是C语言的API，但我可以在需要导出的函数外部套一层`extern "C"`，使其成为一个C语言风格的接口。例如：
+
+```c++
+extern "C" {
+    void my_c_function();
+}
+```
+
+在使用Cmake将C++代码编译成含有加解密算法的函数的动态链接库后，我们就可以在flutter项目中直接使用C++编写的加解密函数。
+
+## 在此项目中使用FFI的具体操作
+
+### 生成.so文件并将其打包进apk
+
+下面的步骤主要为了将C++代码编译成.so文件，并将所有相关的.so文件打包进最后的apk文件，以供我们后续利用FFI调用其中的API函数。
+
+在`/android/app/`目录下，添加我们的C++代码和对应的CmakeLists.txt。
+
+![image-20240104231817492](images/image-20240104231817492.png)
+
+CmakeLists.txt中具体定义了如何将C++代码编译成.so文件。其中包括：
+
+- 指定Android NDK、Cmake ToolChain的路径（需把这些路径改成自己电脑上的路径）
+- 指定Android ABI和API Level
+- 使用的C++动态共享库版本设定
+- 使用的所有第三方库的路径（这里所有用到的第三方库统一为"armeabi-v7a"和"arm64-v8a"两个ABI编译，并存放在`/external_libs/`下。现在还没有在"arm64-v8a"下实际测试过。）
+- 指定C++代码的路径
+- ...
+
+更改`/android/app/`目录下的build.gradle文件，使得Gradle调用cmake编译我们的C++代码生成动态链接库（.so文件），同时做一些其他修改。修改的内容如下：
+
+![image-20240104232200177](images/image-20240104232200177.png)
+
+![image-20240104232212766](images/image-20240104232212766.png)
+
+最后，在`/android/app/`下的settings.gradle的最后还要加入以下内容，明确指定ABI是"armeabi-v7a"，以避免出现在debug模式下为"armeabi-v7a"编译时找不到“libflutter.so”的奇怪问题。
+
+![image-20240104233743405](images/image-20240104233743405.png)
+
+现在，可以正常地生成.so文件并将其打包进apk了。
+
+### 利用FFI调用.so文件中的函数
+
+经过上面的所有操作后，当运行flutter项目时，C++代码会被编译为.so文件，并且.so文件会被打包到apk文件内。但在此基础上，我们还需要利用FFI编写dart代码，在.so文件中找到对应的函数，将其转换为flutter可接受的形式，供flutter项目使用。
+
+在项目根目录下的pubspec.yaml中加入ffi。
+
+![image-20240104225250768](images/image-20240104225250768.png)
+
+C++源代码中导入到.so文件中的函数如下，包括一个简单的在Logcat上打印一条信息的调试用函数和我们主要要用到的加解密函数。现在它们被`extern "c"`包裹，属于“C接口”的形式。我们使用ffi就是要在.so文件中找到这些C风格的函数，并将其转换为flutter风格的函数，以供flutter项目使用。
+
+![image-20240104234848729](images/image-20240104234848729.png)
+
+在项目的lib目录中，添加一个native.dart文件专门用来处理这一部分任务。native.dart的主要思路其实就是打开.so文件（这里是"libmy_project.so"），找到其中的函数并将其转换为flutter中可以使用的形式，最后定义一个类（这里是"TMMOperations"类），通过调用此类的方法就可以调用.so文件中的函数了。
+
+![image-20240104234509305](images/image-20240104234509305.png)
+
+在其他dart源代码中，可以直接import native.dart这个文件。然后就可以直接通过
+
+``` dart
+TMMOperations.confirmFFI();
+//在Logcat上打印一条信息，表示已成功通过FFI导入.so文件中的函数
+```
+
+或
+
+```dart
+TMMOperations.encryptOrDecryptImage(imagePath, dstImagePath, isDecryption);
+//第一个参数是原图片路径（String），第二个参数是处理后的图片存放的路径（String），第三个参数是“处理模式是否是加密”（bool）
+```
+
+这样的方式调用函数！
 
 # To-do List
 
@@ -90,13 +203,12 @@ git clone https://github.com/3urek4/CameraDemo.git
     * [X] 其他占位按钮
 * [ ] 未完成
 
-  * [ ] JPEG加密解密算法（必）
-  * [ ] 加解密算法处理接口（必）
+  * [x] JPEG加密解密算法（必）
+  * [x] 加解密算法处理接口（必）
+  * [ ] 怎么对应用中的Gallery进行读/写（必）
   * [ ] UI优化（选）
   * [ ] 保存/同步图像到相册（选）
   * [ ] 从相册导入图像（选）
   * [ ] to be continued~
 
-P.S. 如果不考虑联网上云的话，其实感觉settings中的其他功能可有可无，这个可以后面再和老师沟通。在现在的基础上把算法接入之后，其实就是一个基本符合设想的完整项目了。
-
-‍
+P.S. 如果不考虑联网上云的话，其实感觉settings中的其他功能可有可无，这个可以后面再和老师沟通。
